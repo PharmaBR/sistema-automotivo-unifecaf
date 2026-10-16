@@ -1,0 +1,55 @@
+### Arquivo de requisições para demonstração (VS Code: extensão "REST Client";
+### IntelliJ: suporte nativo). Também dá para usar o Swagger em /swagger-ui.html.
+
+@base = http://localhost:8080/api
+
+### Listar marcas
+GET {{base}}/brands
+
+### Cadastrar marca
+POST {{base}}/brands
+Content-Type: application/json
+
+{ "name": "Renault", "country": "França" }
+
+### Cadastrar modelo (troque brandId pelo id retornado acima)
+POST {{base}}/models
+Content-Type: application/json
+
+{ "name": "Kwid", "category": "HATCH", "brandId": 7 }
+
+### Cadastrar veículo
+POST {{base}}/vehicles
+Content-Type: application/json
+
+{ "modelId": 1, "manufactureYear": 2024, "color": "Azul", "price": 155000.00, "mileage": 0 }
+
+### Consultar: SUVs disponíveis entre 100 e 160 mil, mais novos primeiro
+GET {{base}}/vehicles?category=SUV&status=AVAILABLE&minPrice=100000&maxPrice=160000&sortBy=manufactureYear&direction=desc
+
+### Consultar por marca (nome parcial) e ano mínimo
+GET {{base}}/vehicles?brand=toyo&minYear=2022
+
+### Resumo por status
+GET {{base}}/vehicles/summary
+
+### Atualizar preço e quilometragem
+PATCH {{base}}/vehicles/1
+Content-Type: application/json
+
+{ "price": 145000.00, "mileage": 19000 }
+
+### Regra de negócio: quilometragem não pode diminuir (espera 422)
+PATCH {{base}}/vehicles/1
+Content-Type: application/json
+
+{ "mileage": 100 }
+
+### Marcar como vendido
+PATCH {{base}}/vehicles/1
+Content-Type: application/json
+
+{ "status": "SOLD" }
+
+### Remover (só funciona para vendido/descontinuado)
+DELETE {{base}}/vehicles/1

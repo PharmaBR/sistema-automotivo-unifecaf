@@ -1,0 +1,238 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Sistema Automotivo — Estoque</title>
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="brand">
+        <span class="logo" aria-hidden="true">◆</span>
+        <div>
+            <h1>Sistema Automotivo</h1>
+            <p>Gestão de estoque de veículos</p>
+        </div>
+    </div>
+    <nav class="tabs" role="tablist">
+        <button class="tab active" data-tab="vehicles" role="tab">Veículos</button>
+        <button class="tab" data-tab="catalog" role="tab">Marcas e modelos</button>
+        <a class="tab link" href="swagger-ui.html" target="_blank" rel="noopener">API (Swagger) ↗</a>
+    </nav>
+</header>
+
+<main>
+    <!-- ============================ VEÍCULOS ============================ -->
+    <section id="tab-vehicles" class="panel">
+        <div class="summary" id="summary"></div>
+
+        <form id="filters" class="card filters" autocomplete="off">
+            <div class="field">
+                <label for="f-brand">Marca</label>
+                <select id="f-brand" name="brandId"><option value="">Todas</option></select>
+            </div>
+            <div class="field">
+                <label for="f-model">Modelo</label>
+                <select id="f-model" name="modelId"><option value="">Todos</option></select>
+            </div>
+            <div class="field">
+                <label for="f-category">Tipo</label>
+                <select id="f-category" name="category">
+                    <option value="">Todos</option>
+                    <option value="HATCH">Hatch</option>
+                    <option value="SEDAN">Sedã</option>
+                    <option value="SUV">SUV</option>
+                    <option value="PICKUP">Picape</option>
+                    <option value="MINIVAN">Minivan</option>
+                    <option value="COUPE">Cupê</option>
+                </select>
+            </div>
+            <div class="field">
+                <label for="f-status">Status</label>
+                <select id="f-status" name="status">
+                    <option value="">Todos</option>
+                    <option value="AVAILABLE">Disponível</option>
+                    <option value="RESERVED">Reservado</option>
+                    <option value="SOLD">Vendido</option>
+                    <option value="DISCONTINUED">Descontinuado</option>
+                </select>
+            </div>
+            <div class="field small">
+                <label for="f-minPrice">Preço mín.</label>
+                <input id="f-minPrice" name="minPrice" type="number" min="0" step="1000" placeholder="R$">
+            </div>
+            <div class="field small">
+                <label for="f-maxPrice">Preço máx.</label>
+                <input id="f-maxPrice" name="maxPrice" type="number" min="0" step="1000" placeholder="R$">
+            </div>
+            <div class="field small">
+                <label for="f-minYear">Ano de</label>
+                <input id="f-minYear" name="minYear" type="number" min="1900" max="2100" placeholder="2018">
+            </div>
+            <div class="field small">
+                <label for="f-maxYear">Ano até</label>
+                <input id="f-maxYear" name="maxYear" type="number" min="1900" max="2100" placeholder="2025">
+            </div>
+            <div class="field">
+                <label for="f-sort">Ordenar por</label>
+                <select id="f-sort" name="sort">
+                    <option value="id:asc">Cadastro</option>
+                    <option value="price:asc">Menor preço</option>
+                    <option value="price:desc">Maior preço</option>
+                    <option value="manufactureYear:desc">Mais novo</option>
+                    <option value="mileage:asc">Menor km</option>
+                </select>
+            </div>
+            <div class="actions">
+                <button type="submit" class="btn primary">Filtrar</button>
+                <button type="reset" class="btn ghost">Limpar</button>
+            </div>
+        </form>
+
+        <div class="card">
+            <div class="card-head">
+                <h2>Estoque <span id="total" class="muted"></span></h2>
+                <button id="btn-new-vehicle" class="btn primary">+ Novo veículo</button>
+            </div>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                    <tr>
+                        <th>#</th><th>Marca / Modelo</th><th>Tipo</th><th>Ano</th><th>Cor</th>
+                        <th class="num">Preço</th><th class="num">Km</th><th>Status</th><th></th>
+                    </tr>
+                    </thead>
+                    <tbody id="vehicle-rows"></tbody>
+                </table>
+            </div>
+            <div class="pager">
+                <button id="prev" class="btn ghost">‹ Anterior</button>
+                <span id="page-info" class="muted"></span>
+                <button id="next" class="btn ghost">Próxima ›</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== MARCAS E MODELOS ======================== -->
+    <section id="tab-catalog" class="panel" hidden>
+        <div class="grid-2">
+            <div class="card">
+                <div class="card-head"><h2>Marcas</h2></div>
+                <form id="brand-form" class="inline-form" autocomplete="off">
+                    <input name="name" placeholder="Nome da marca" required maxlength="80">
+                    <input name="country" placeholder="País de origem" maxlength="60">
+                    <button class="btn primary" type="submit">Adicionar</button>
+                </form>
+                <ul id="brand-list" class="list"></ul>
+            </div>
+            <div class="card">
+                <div class="card-head"><h2>Modelos</h2></div>
+                <form id="model-form" class="inline-form" autocomplete="off">
+                    <select name="brandId" id="model-brand" required></select>
+                    <input name="name" placeholder="Nome do modelo" required maxlength="80">
+                    <select name="category" required>
+                        <option value="HATCH">Hatch</option>
+                        <option value="SEDAN">Sedã</option>
+                        <option value="SUV">SUV</option>
+                        <option value="PICKUP">Picape</option>
+                        <option value="MINIVAN">Minivan</option>
+                        <option value="COUPE">Cupê</option>
+                    </select>
+                    <button class="btn primary" type="submit">Adicionar</button>
+                </form>
+                <ul id="model-list" class="list"></ul>
+            </div>
+        </div>
+    </section>
+</main>
+
+<!-- ====================== DIÁLOGO: NOVO VEÍCULO ====================== -->
+<dialog id="dlg-create">
+    <form id="create-form" method="dialog" autocomplete="off">
+        <h3>Novo veículo</h3>
+        <div class="form-grid">
+            <div class="field">
+                <label for="c-brand">Marca</label>
+                <select id="c-brand" required></select>
+            </div>
+            <div class="field">
+                <label for="c-model">Modelo</label>
+                <select id="c-model" name="modelId" required></select>
+            </div>
+            <div class="field">
+                <label for="c-year">Ano de fabricação</label>
+                <input id="c-year" name="manufactureYear" type="number" min="1900" max="2100" required>
+            </div>
+            <div class="field">
+                <label for="c-color">Cor</label>
+                <input id="c-color" name="color" required maxlength="40">
+            </div>
+            <div class="field">
+                <label for="c-price">Preço (R$)</label>
+                <input id="c-price" name="price" type="number" min="0.01" step="0.01" required>
+            </div>
+            <div class="field">
+                <label for="c-km">Quilometragem</label>
+                <input id="c-km" name="mileage" type="number" min="0" step="1" required>
+            </div>
+        </div>
+        <div class="dlg-actions">
+            <button type="button" class="btn ghost" data-close>Cancelar</button>
+            <button type="submit" class="btn primary">Cadastrar</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- ====================== DIÁLOGO: EDITAR VEÍCULO ===================== -->
+<dialog id="dlg-edit">
+    <form id="edit-form" method="dialog" autocomplete="off">
+        <h3>Editar veículo <span id="edit-title" class="muted"></span></h3>
+        <input type="hidden" name="vehicleId">
+        <div class="form-grid">
+            <div class="field">
+                <label for="e-price">Preço (R$)</label>
+                <input id="e-price" name="price" type="number" min="0.01" step="0.01">
+            </div>
+            <div class="field">
+                <label for="e-km">Quilometragem</label>
+                <input id="e-km" name="mileage" type="number" min="0" step="1">
+            </div>
+            <div class="field">
+                <label for="e-color">Cor</label>
+                <input id="e-color" name="color" maxlength="40">
+            </div>
+            <div class="field">
+                <label for="e-status">Status</label>
+                <select id="e-status" name="status">
+                    <option value="AVAILABLE">Disponível</option>
+                    <option value="RESERVED">Reservado</option>
+                    <option value="SOLD">Vendido</option>
+                    <option value="DISCONTINUED">Descontinuado</option>
+                </select>
+            </div>
+        </div>
+        <div class="dlg-actions">
+            <button type="button" class="btn ghost" data-close>Cancelar</button>
+            <button type="submit" class="btn primary">Salvar</button>
+        </div>
+    </form>
+</dialog>
+
+<!-- ==================== DIÁLOGO: CONFIRMAR REMOÇÃO ==================== -->
+<dialog id="dlg-delete">
+    <form id="delete-form" method="dialog">
+        <h3>Remover veículo?</h3>
+        <p id="delete-text"></p>
+        <input type="hidden" name="vehicleId">
+        <div class="dlg-actions">
+            <button type="button" class="btn ghost" data-close>Cancelar</button>
+            <button type="submit" class="btn danger">Remover</button>
+        </div>
+    </form>
+</dialog>
+
+<div id="toast" role="status" aria-live="polite"></div>
+<script src="js/app.js"></script>
+</body>
+</html>
