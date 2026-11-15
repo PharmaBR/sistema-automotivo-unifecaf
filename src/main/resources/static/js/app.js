@@ -9,6 +9,10 @@ const $ = (sel) => document.querySelector(sel);
 const brl = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
 const km = new Intl.NumberFormat('pt-BR');
 const CATEGORY = { HATCH: 'Hatch', SEDAN: 'Sedã', SUV: 'SUV', PICKUP: 'Picape', MINIVAN: 'Minivan', COUPE: 'Cupê' };
+const FIELD = {
+    modelId: 'Modelo', manufactureYear: 'Ano', color: 'Cor', price: 'Preço', mileage: 'Quilometragem',
+    status: 'Status', name: 'Nome', country: 'País', category: 'Tipo', brandId: 'Marca',
+};
 const STATUS = { AVAILABLE: 'Disponível', RESERVED: 'Reservado', SOLD: 'Vendido', DISCONTINUED: 'Descontinuado' };
 
 // ------------------------------------------------------------------ HTTP
@@ -24,7 +28,7 @@ async function api(path, options = {}) {
         // A API responde erros no formato Problem Details: { title, detail, errors }
         let msg = body?.detail || `Erro ${res.status}`;
         if (body?.errors) {
-            msg += ': ' + Object.entries(body.errors).map(([f, m]) => `${f} ${m}`).join('; ');
+            msg += ': ' + Object.entries(body.errors).map(([f, m]) => `${FIELD[f] || f} ${m}`).join('; ');
         }
         throw new Error(msg);
     }
@@ -103,6 +107,11 @@ function renderVehicles(data) {
     $('#prev').disabled = data.page <= 0;
     $('#next').disabled = data.page + 1 >= data.totalPages;
 
+    if (!data.content.length && data.page > 0) { // removeu o último item da página: volta uma
+        state.page = data.totalPages ? data.totalPages - 1 : 0;
+        loadVehicles();
+        return;
+    }
     if (!data.content.length) {
         $('#vehicle-rows').innerHTML = '<tr><td colspan="9" class="empty">Nenhum veículo encontrado com esses filtros.</td></tr>';
         return;
@@ -118,7 +127,8 @@ function renderVehicles(data) {
             <td class="num">${km.format(v.mileage)}</td>
             <td><span class="badge s-${v.status}">${v.statusLabel}</span></td>
             <td><div class="row-actions">
-                <button class="btn ghost icon" data-edit='${escapeHtml(JSON.stringify(v))}'>Editar</button>
+                <button class="btn ghost icon" data-edit='${escapeHtml(JSON.stringify(v))}'
+                    ${v.status === 'SOLD' ? 'disabled title="Veículo vendido não pode ser editado"' : ''}>Editar</button>
                 <button class="btn ghost icon" data-delete='${escapeHtml(JSON.stringify(v))}'>Remover</button>
             </div></td>
         </tr>`).join('');

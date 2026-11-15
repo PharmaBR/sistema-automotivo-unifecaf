@@ -13,7 +13,7 @@ import java.math.BigDecimal;
  * Campo ausente/nulo = não altera.
  */
 public record VehicleUpdateRequest(
-        @DecimalMin(value = "0.01", message = "deve ser maior que zero") @Digits(integer = 10, fraction = 2)
+        @DecimalMin(value = "0.01", message = "deve ser maior que zero") @Digits(integer = 10, fraction = 2, message = "aceita no máximo 10 dígitos inteiros e 2 casas decimais")
         BigDecimal price,
         @PositiveOrZero Integer mileage,
         VehicleStatus status,

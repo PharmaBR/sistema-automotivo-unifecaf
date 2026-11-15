@@ -109,6 +109,7 @@ public class VehicleController {
             throw new IllegalArgumentException("page deve ser >= 0 e size entre 1 e " + MAX_PAGE_SIZE);
         }
         Sort.Direction dir = "desc".equalsIgnoreCase(direction) ? Sort.Direction.DESC : Sort.Direction.ASC;
-        return PageRequest.of(page, size, Sort.by(dir, sortBy));
+        // desempate pelo id: mantém a ordem estável entre páginas quando há valores iguais
+        return PageRequest.of(page, size, Sort.by(dir, sortBy).and(Sort.by("id")));
     }
 }

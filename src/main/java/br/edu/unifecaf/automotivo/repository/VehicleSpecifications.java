@@ -17,6 +17,9 @@ import java.util.Locale;
  */
 public final class VehicleSpecifications {
 
+    /** Caractere de escape do LIKE: faz % e _ digitados pelo usuário valerem como texto comum. */
+    private static final char ESCAPE = '!';
+
     private VehicleSpecifications() {
         // classe utilitária: não deve ser instanciada
     }
@@ -34,10 +37,10 @@ public final class VehicleSpecifications {
                 predicates.add(cb.equal(model.get("id"), filter.modelId()));
             }
             if (hasText(filter.brand())) {
-                predicates.add(cb.like(cb.lower(brand.get("name")), contains(filter.brand())));
+                predicates.add(cb.like(cb.lower(brand.get("name")), contains(filter.brand()), ESCAPE));
             }
             if (hasText(filter.model())) {
-                predicates.add(cb.like(cb.lower(model.get("name")), contains(filter.model())));
+                predicates.add(cb.like(cb.lower(model.get("name")), contains(filter.model()), ESCAPE));
             }
             if (filter.category() != null) {
                 predicates.add(cb.equal(model.get("category"), filter.category()));
@@ -58,7 +61,7 @@ public final class VehicleSpecifications {
                 predicates.add(cb.lessThanOrEqualTo(root.get("manufactureYear"), filter.maxYear()));
             }
             if (hasText(filter.color())) {
-                predicates.add(cb.like(cb.lower(root.get("color")), contains(filter.color())));
+                predicates.add(cb.like(cb.lower(root.get("color")), contains(filter.color()), ESCAPE));
             }
             return cb.and(predicates.toArray(Predicate[]::new));
         };
@@ -69,6 +72,10 @@ public final class VehicleSpecifications {
     }
 
     private static String contains(String value) {
-        return "%" + value.trim().toLowerCase(Locale.ROOT) + "%";
+        String escaped = value.trim().toLowerCase(Locale.ROOT)
+                .replace("!", "!!")
+                .replace("%", "!%")
+                .replace("_", "!_");
+        return "%" + escaped + "%";
     }
 }

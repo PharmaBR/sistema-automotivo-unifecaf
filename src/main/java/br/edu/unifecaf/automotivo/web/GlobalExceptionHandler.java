@@ -8,11 +8,14 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -41,7 +44,11 @@ public class GlobalExceptionHandler {
     public ProblemDetail handleValidation(BindException ex) {
         Map<String, String> errors = new LinkedHashMap<>();
         for (FieldError error : ex.getBindingResult().getFieldErrors()) {
-            errors.putIfAbsent(error.getField(), error.getDefaultMessage());
+            // Falha de conversão (ex.: status=FOO): mensagem curta em vez do texto técnico do Spring
+            String message = error.isBindingFailure()
+                    ? "valor inválido: " + error.getRejectedValue()
+                    : error.getDefaultMessage();
+            errors.putIfAbsent(error.getField(), message);
         }
         ProblemDetail problem = problem(HttpStatus.BAD_REQUEST, "Dados inválidos",
                 "Um ou mais campos não passaram na validação");
@@ -55,10 +62,34 @@ public class GlobalExceptionHandler {
             MethodArgumentTypeMismatchException.class
     })
     public ProblemDetail handleBadRequest(Exception ex) {
-        String detail = (ex instanceof HttpMessageNotReadableException)
-                ? "JSON inválido ou valor fora do esperado (verifique enums como status e category)"
-                : ex.getMessage();
+        String detail;
+        if (ex instanceof HttpMessageNotReadableException) {
+            detail = "JSON inválido ou valor fora do esperado (verifique enums como status e category)";
+        } else if (ex instanceof MethodArgumentTypeMismatchException mismatch) {
+            detail = "Valor inválido para '" + mismatch.getName() + "': " + mismatch.getValue();
+        } else {
+            detail = ex.getMessage();
+        }
         return problem(HttpStatus.BAD_REQUEST, "Requisição inválida", detail);
+    }
+
+    // Erros do próprio Spring MVC também saem no formato Problem Details
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ProblemDetail handleMethodNotAllowed(HttpRequestMethodNotSupportedException ex) {
+        return problem(HttpStatus.METHOD_NOT_ALLOWED, "Método não permitido",
+                "O método " + ex.getMethod() + " não é aceito nesta rota");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    public ProblemDetail handleUnsupportedMediaType(HttpMediaTypeNotSupportedException ex) {
+        return problem(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "Formato não suportado",
+                "Envie o corpo da requisição como application/json");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ProblemDetail handleNoRoute(NoResourceFoundException ex) {
+        return problem(HttpStatus.NOT_FOUND, "Recurso não encontrado", "Rota inexistente: /" + ex.getResourcePath());
     }
 
     @ExceptionHandler(DataIntegrityViolationException.class)

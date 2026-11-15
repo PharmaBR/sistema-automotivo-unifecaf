@@ -1,11 +1,10 @@
 # Sistema Automotivo — Gestão de Estoque de Veículos
 
-Projeto acadêmico (UniFECAF · ADS · disciplina *Object Oriented Programming*) —
-Repositório: https://github.com/PharmaBR/sistema-automotivo-unifecaf
+Projeto acadêmico — UniFECAF · ADS · disciplina *Object Oriented Programming* ·
+aluno Breno Silva de Abreu (matrícula 189836).
 
-Sistema CRUD orientado a objetos para gestão de estoque
-de veículos, com **Java 21 + Spring Boot 3 + MySQL 8**, API REST documentada no Swagger e um
-front-end simples em HTML/JS.
+Sistema CRUD orientado a objetos para gestão de estoque de veículos, com
+**Java 21 + Spring Boot 3 + MySQL 8**, API REST documentada no Swagger e um front-end simples em HTML/JS.
 
 ## Funcionalidades (requisitos funcionais)
 
@@ -49,8 +48,10 @@ mvn test          # ou, sem Java local:
 docker run --rm -v "$PWD":/app -w /app maven:3.9-eclipse-temurin-21 mvn -B test
 ```
 
-- `VehicleTest` — testes de unidade das regras de negócio (Java puro, sem banco).
-- `VehicleApiIntegrationTest` — testes de integração da API (Spring + MockMvc + H2 em modo MySQL).
+São 23 testes automatizados:
+
+- `VehicleTest` — 10 testes de unidade das regras de negócio (Java puro, sem banco).
+- `VehicleApiIntegrationTest` — 13 testes de integração da API (Spring + MockMvc + H2 em modo MySQL).
 
 ## Arquitetura
 
@@ -91,5 +92,11 @@ Fluxo de uma requisição: `Controller → Service → Entidade (regras) → Rep
 
 Exemplos prontos em [`docs/api.http`](docs/api.http).
 
-Erros seguem o padrão *Problem Details* (RFC 9457): `400` dados inválidos, `404` não encontrado,
-`422` regra de negócio violada, `409` conflito no banco.
+Todos os erros seguem o padrão *Problem Details* (RFC 9457), com mensagens em português: `400` dados
+inválidos, `404` não encontrado, `405` método não permitido, `409` conflito no banco, `422` regra de
+negócio violada.
+
+## Documentação
+
+- [Relatório teórico (PDF)](docs/Relatorio_Teorico.pdf)
+- [Relatório prático com prints (PDF)](docs/Relatorio_Pratico.pdf)

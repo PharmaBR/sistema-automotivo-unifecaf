@@ -13,11 +13,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -182,6 +185,54 @@ class VehicleApiIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.AVAILABLE").value(3))
                 .andExpect(jsonPath("$.SOLD").value(0));
+    }
+
+    @Test
+    @DisplayName("todo erro segue o formato Problem Details, com mensagens em português")
+    void errorsAreConsistent() throws Exception {
+        // método não suportado -> 405 no mesmo formato dos demais erros
+        mvc.perform(put("/api/vehicles/1").contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isMethodNotAllowed())
+                .andExpect(jsonPath("$.title").value("Método não permitido"));
+
+        // enum inválido na query: mensagem clara, sem nomes de classes Java
+        mvc.perform(get("/api/vehicles").param("status", "FOO"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.status").value("valor inválido: FOO"));
+
+        // id não numérico
+        mvc.perform(get("/api/vehicles/abc"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.detail").value(not(containsString("java.lang"))));
+
+        // validação padrão do Bean Validation sai em português
+        mvc.perform(post("/api/vehicles").contentType(MediaType.APPLICATION_JSON).content("""
+                        {"modelId": %d, "manufactureYear": 2024, "color": "Azul", "price": 10, "mileage": -1}"""
+                        .formatted(corollaId)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.mileage").value(containsString("maior ou igual a 0")));
+    }
+
+    @Test
+    @DisplayName("filtro por texto trata % e _ como caracteres comuns")
+    void textFilterEscapesWildcards() throws Exception {
+        mvc.perform(get("/api/vehicles").param("brand", "%"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(0));
+        mvc.perform(get("/api/vehicles").param("model", "_____"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+    }
+
+    @Test
+    @DisplayName("ordenação com empate é estável (desempata pelo id)")
+    void sortingIsStable() throws Exception {
+        long a = createVehicle(corollaId, 2020, "Cinza", "70000.00", 10);
+        long b = createVehicle(corollaId, 2020, "Cinza", "70000.00", 10);
+        mvc.perform(get("/api/vehicles").param("minPrice", "70000").param("maxPrice", "70000")
+                        .param("sortBy", "price").param("direction", "desc"))
+                .andExpect(jsonPath("$.content", hasSize(3)))
+                .andExpect(jsonPath("$.content[1].id").value((int) a))
+                .andExpect(jsonPath("$.content[2].id").value((int) b));
     }
 
     // ------------------------------------------------------------------ helpers
