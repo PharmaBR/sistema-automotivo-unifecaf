@@ -6,6 +6,8 @@ aluno Breno Silva de Abreu (matrícula 189836).
 Sistema CRUD orientado a objetos para gestão de estoque de veículos, com
 **Java 21 + Spring Boot 3 + MySQL 8**, API REST documentada no Swagger e um front-end simples em HTML/JS.
 
+🎥 **Vídeo pitch:** https://www.loom.com/share/54bc1f91904c41f5932fcd81efa49355
+
 ## Funcionalidades (requisitos funcionais)
 
 | RF | Descrição | Onde |
