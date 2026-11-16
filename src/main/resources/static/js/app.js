@@ -156,6 +156,27 @@ function formToJson(form, numericFields = []) {
     return out;
 }
 
+/**
+ * Registra o submit de um formulário que grava dados, ignorando novos envios enquanto a
+ * requisição anterior não termina. Sem isso, um duplo clique (ou Enter + clique) envia a
+ * requisição duas vezes — algo visível sobretudo no Docker, onde a resposta demora mais.
+ */
+function onSubmitOnce(form, handler) {
+    form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        if (form.dataset.busy) return;
+        form.dataset.busy = 'true';
+        const buttons = form.querySelectorAll('button[type="submit"]');
+        buttons.forEach((b) => (b.disabled = true));
+        try {
+            await handler(e);
+        } finally {
+            delete form.dataset.busy;
+            buttons.forEach((b) => (b.disabled = false));
+        }
+    });
+}
+
 function bindEvents() {
     document.querySelectorAll('.tab[data-tab]').forEach((tab) => tab.addEventListener('click', () => {
         document.querySelectorAll('.tab[data-tab]').forEach((t) => t.classList.toggle('active', t === tab));
@@ -180,8 +201,7 @@ function bindEvents() {
         $('#dlg-create').showModal();
     });
     $('#c-brand').addEventListener('change', (e) => fillModelSelect($('#c-model'), e.target.value, false));
-    $('#create-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    onSubmitOnce($('#create-form'), async (e) => {
         try {
             const body = formToJson(e.target, ['modelId', 'manufactureYear', 'price', 'mileage']);
             const v = await api('/vehicles', { method: 'POST', body: JSON.stringify(body) });
@@ -214,8 +234,7 @@ function bindEvents() {
             $('#dlg-delete').showModal();
         }
     });
-    $('#edit-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    onSubmitOnce($('#edit-form'), async (e) => {
         const id = e.target.elements.vehicleId.value;
         try {
             const body = formToJson(e.target, ['price', 'mileage']);
@@ -225,8 +244,7 @@ function bindEvents() {
             refreshAll();
         } catch (err) { toast(err.message, 'error'); }
     });
-    $('#delete-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    onSubmitOnce($('#delete-form'), async (e) => {
         const id = e.target.elements.vehicleId.value;
         try {
             await api(`/vehicles/${id}`, { method: 'DELETE' });
@@ -237,15 +255,13 @@ function bindEvents() {
     });
 
     // Marcas e modelos
-    $('#brand-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    onSubmitOnce($('#brand-form'), async (e) => {
         try {
             await api('/brands', { method: 'POST', body: JSON.stringify(formToJson(e.target)) });
             e.target.reset(); toast('Marca cadastrada'); await loadCatalog();
         } catch (err) { toast(err.message, 'error'); }
     });
-    $('#model-form').addEventListener('submit', async (e) => {
-        e.preventDefault();
+    onSubmitOnce($('#model-form'), async (e) => {
         try {
             await api('/models', { method: 'POST', body: JSON.stringify(formToJson(e.target, ['brandId'])) });
             e.target.elements.name.value = ''; toast('Modelo cadastrado'); await loadCatalog();
