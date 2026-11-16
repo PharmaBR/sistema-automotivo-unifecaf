@@ -13,13 +13,16 @@ services:
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      # Checa via TCP (127.0.0.1): durante a inicialização o MySQL sobe um servidor temporário
+      # só por socket; "localhost" passaria cedo demais e a aplicação tentaria conectar antes da hora.
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "--protocol=tcp", "-uroot", "-proot"]
       interval: 5s
       timeout: 5s
       retries: 30
 
   app:
     build: .
+    restart: on-failure   # se o banco ainda não respondeu, tenta de novo
     depends_on:
       db:
         condition: service_healthy
